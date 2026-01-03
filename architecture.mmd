@@ -1,0 +1,31 @@
+graph TD
+    User[User / Developer] -->|HTTPS/gRPC| LB[Global Load Balancer]
+    LB --> FE[Frontend (Next.js 14)]
+    LB --> API[API Gateway (Go / gRPC)]
+    
+    subgraph "Control Plane (Region A)"
+        API --> Auth[Auth Service (Go)]
+        API --> Billing[Billing Service (Go)]
+        API --> Compute[Compute Controller (Go)]
+        API --> Network[Network Controller (Go)]
+        
+        Compute -->|gRPC| K8sMaster[K8s Master / KubeVirt]
+        Network -->|gRPC| IPAM[IPAM Service]
+    end
+    
+    subgraph "Data Layer"
+        CRDB[(CockroachDB - Global SQL)]
+        Redis[(Redis - Cache)]
+    end
+    
+    subgraph "Infrastructure (Worker Nodes)"
+        K8sMaster --> Node1[Worker Node 1]
+        K8sMaster --> Node2[Worker Node 2]
+        Node1 --> VM1[VM Instance (KubeVirt)]
+        Node2 --> Pod1[Container Pod]
+    end
+
+    Auth --> CRDB
+    Billing --> CRDB
+    Compute --> CRDB
+    Compute --> Redis
